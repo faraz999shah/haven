@@ -45,30 +45,60 @@ export async function parseRequest(
   })
   const out = ParseSchema.parse(raw)
 
-  const payeeName = out.payee_name?.trim() || null
+  const payeeName = text(out.payee_name)
+  const seniorWords = transcript
+    .filter((t) => t.role === 'senior')
+    .map((t) => t.text)
+    .join(' ')
   const amountCents =
-    out.amount !== null && Number.isFinite(out.amount) && out.amount > 0 && dollarsToCents(out.amount) <= MAX_SANE_CENTS
+    out.amount !== null &&
+    Number.isFinite(out.amount) &&
+    out.amount > 0 &&
+    dollarsToCents(out.amount) <= MAX_SANE_CENTS &&
+    isAmountGrounded(out.amount, text(out.amount_quote), seniorWords)
       ? dollarsToCents(out.amount)
       : null
-  const purpose = out.purpose?.trim() || null
+  const purpose = text(out.purpose)
+  const modelQuestion = text(out.clarifying_question)
   const draft: PaymentDraft = { payeeName, amountCents, purpose }
 
   if (!out.is_payment_request && !payeeName && amountCents === null) {
     return {
       kind: 'clarify',
       draft,
-      question: out.clarifying_question || 'I can help you send money. Who would you like to pay?',
+      question: modelQuestion || 'I can help you send money. Who would you like to pay?',
     }
   }
   if (!payeeName) {
-    return { kind: 'clarify', draft, question: out.clarifying_question || 'Who would you like to send the money to?' }
+    return { kind: 'clarify', draft, question: modelQuestion || 'Who would you like to send the money to?' }
   }
   if (amountCents === null) {
     return {
       kind: 'clarify',
       draft,
-      question: out.clarifying_question || `How much would you like to send to ${payeeName}?`,
+      question: modelQuestion || `How much would you like to send to ${payeeName}?`,
     }
   }
   return { kind: 'complete', draft: { payeeName, amountCents, purpose } }
+}
+
+// Models sometimes write the string "null" (or "") instead of a JSON null.
+function text(value: string | null): string | null {
+  const t = value?.trim()
+  return t && !/^(null|none|n\/a|unknown)$/i.test(t) ? t : null
+}
+
+const NUMBER_WORD =
+  /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|grand)\b/
+const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+
+// The model sometimes invents an amount the senior never said. Only accept an amount whose
+// quoted words actually appear in the senior's speech, and whose digits (if any) match it.
+export function isAmountGrounded(amount: number, quote: string | null, seniorWords: string): boolean {
+  if (!quote) return false
+  const q = normalize(quote)
+  if (!q || !normalize(seniorWords).includes(q)) return false
+  const digits = q.match(/\d[\d,]*(\.\d+)?/)
+  if (digits) return Math.abs(Number(digits[0].replace(/,/g, '')) - amount) < 0.005
+  return NUMBER_WORD.test(q)
 }

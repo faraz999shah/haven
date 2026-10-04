@@ -32,11 +32,11 @@ describe('combine', () => {
       }
     })
 
-    it("uses the AI's plain-language reason when available, else the rule messages", () => {
-      expect(combine({ rules: HOLD, ai: ai('low'), followUpsAsked: 0 }).reason).toBe('AI says low')
-      expect(combine({ rules: HOLD, ai: AI_FAILED, followUpsAsked: 0 }).reason).toBe(
-        '$350 is over the $200 single-payment limit.',
-      )
+    it("leads with the rules' messages and adds the AI's reason only when it raised a concern", () => {
+      const rule = '$350 is over the $200 single-payment limit.'
+      expect(combine({ rules: HOLD, ai: ai('low'), followUpsAsked: 0 }).reason).toBe(rule)
+      expect(combine({ rules: HOLD, ai: AI_FAILED, followUpsAsked: 0 }).reason).toBe(rule)
+      expect(combine({ rules: HOLD, ai: ai('high'), followUpsAsked: 0 }).reason).toBe(`${rule} AI says high`)
     })
   })
 

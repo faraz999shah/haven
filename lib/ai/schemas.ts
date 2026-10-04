@@ -4,6 +4,7 @@ export const ParseSchema = z.object({
   is_payment_request: z.boolean(),
   payee_name: z.string().nullable(),
   amount: z.number().nullable(),
+  amount_quote: z.string().nullable(),
   purpose: z.string().nullable(),
   clarifying_question: z.string().nullable(),
 })

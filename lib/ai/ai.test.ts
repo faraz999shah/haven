@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StructuredCall, StructuredRequest } from './llm'
-import { parseRequest } from './parse'
+import { isAmountGrounded, parseRequest } from './parse'
 import { assessRisk, type RiskContext } from './risk'
 
 const returning =
@@ -69,6 +69,7 @@ describe('parseRequest', () => {
     is_payment_request: true,
     payee_name: null,
     amount: null,
+    amount_quote: null,
     purpose: null,
     clarifying_question: null,
     ...o,
@@ -78,13 +79,17 @@ describe('parseRequest', () => {
     const r = await parseRequest(
       [{ role: 'senior', text: 'Send Maria $85 for groceries' }],
       undefined,
-      returning(out({ payee_name: 'Maria', amount: 85, purpose: 'groceries' })),
+      returning(out({ payee_name: 'Maria', amount: 85, amount_quote: '$85', purpose: 'groceries' })),
     )
     expect(r).toEqual({ kind: 'complete', draft: { payeeName: 'Maria', amountCents: 8500, purpose: 'groceries' } })
   })
 
   it('handles cents without floating point drift', async () => {
-    const r = await parseRequest([], undefined, returning(out({ payee_name: 'Linda', amount: 19.99 })))
+    const r = await parseRequest(
+      [{ role: 'senior', text: 'Pay Linda $19.99' }],
+      undefined,
+      returning(out({ payee_name: 'Linda', amount: 19.99, amount_quote: '$19.99' })),
+    )
     expect(r).toMatchObject({ draft: { amountCents: 1999 } })
   })
 
@@ -102,14 +107,22 @@ describe('parseRequest', () => {
   })
 
   it('falls back to a template question', async () => {
-    expect(await parseRequest([], undefined, returning(out({ amount: 50 })))).toMatchObject({
+    const said = [{ role: 'senior' as const, text: 'Send fifty dollars' }]
+    expect(
+      await parseRequest(said, undefined, returning(out({ amount: 50, amount_quote: 'fifty dollars' }))),
+    ).toMatchObject({
       kind: 'clarify',
       question: 'Who would you like to send the money to?',
     })
   })
 
   it.each([0, -20, Number.POSITIVE_INFINITY, 5_000_000])('treats amount %s as missing', async (amount) => {
-    const r = await parseRequest([], undefined, returning(out({ payee_name: 'Maria', amount })))
+    const said = [{ role: 'senior' as const, text: `Pay Maria ${amount}` }]
+    const r = await parseRequest(
+      said,
+      undefined,
+      returning(out({ payee_name: 'Maria', amount, amount_quote: String(amount) })),
+    )
     expect(r).toMatchObject({ kind: 'clarify', question: 'How much would you like to send to Maria?' })
   })
 
@@ -122,13 +135,71 @@ describe('parseRequest', () => {
     await expect(parseRequest([], undefined, returning({ amount: '85' }))).rejects.toThrow()
   })
 
+  it('rejects an amount the senior never said (seen live: "I need to pay Linda" → $18)', async () => {
+    const r = await parseRequest(
+      [{ role: 'senior', text: 'I need to pay Linda' }],
+      undefined,
+      returning(out({ payee_name: 'Linda', amount: 18, amount_quote: '$18', purpose: 'payment' })),
+    )
+    expect(r).toMatchObject({ kind: 'clarify', question: 'How much would you like to send to Linda?' })
+  })
+
+  it('decides completeness in code, ignoring a stray question about the purpose (seen live)', async () => {
+    const r = await parseRequest(
+      [{ role: 'senior', text: "Pay Joe's Plumbing $350" }],
+      undefined,
+      returning(
+        out({
+          payee_name: "Joe's Plumbing",
+          amount: 350,
+          amount_quote: '$350',
+          clarifying_question: 'What is it for?',
+        }),
+      ),
+    )
+    expect(r).toEqual({ kind: 'complete', draft: { payeeName: "Joe's Plumbing", amountCents: 35000, purpose: null } })
+  })
+
+  it('treats the string "null" as missing (seen live)', async () => {
+    const r = await parseRequest(
+      [{ role: 'senior', text: 'Send Maria $85' }],
+      undefined,
+      returning(
+        out({ payee_name: 'Maria', amount: 85, amount_quote: '$85', purpose: 'null', clarifying_question: 'null' }),
+      ),
+    )
+    expect(r).toEqual({ kind: 'complete', draft: { payeeName: 'Maria', amountCents: 8500, purpose: null } })
+    const missing = await parseRequest(
+      [{ role: 'senior', text: 'Pay Linda' }],
+      undefined,
+      returning(out({ payee_name: 'Linda', clarifying_question: 'null' })),
+    )
+    expect(missing).toMatchObject({ kind: 'clarify', question: 'How much would you like to send to Linda?' })
+  })
+
   it('passes previously collected details to the model', async () => {
     const seen: StructuredRequest[] = []
     await parseRequest(
       [{ role: 'senior', text: 'Linda' }],
       { payeeName: null, amountCents: 5000, purpose: null },
-      returning(out({ payee_name: 'Linda', amount: 50 }), seen),
+      returning(out({ payee_name: 'Linda', amount: 50, amount_quote: null }), seen),
     )
     expect(seen[0].input).toContain('"amount":50')
+  })
+})
+
+describe('isAmountGrounded', () => {
+  it.each([
+    [85, '$85', 'Send Maria $85 for groceries', true],
+    [1200, '$1,200', 'pay them $1,200 today', true],
+    [85, 'eighty-five dollars', 'send Maria eighty-five dollars', true],
+    [100, 'a hundred bucks', 'Give Linda a hundred bucks', true],
+    [85, '$58', 'Send Maria $58', false], // digits disagree with the amount
+    [18, '$18', 'I need to pay Linda', false], // quote not in speech
+    [50, 'some money', 'send Linda some money', false], // no number in the quote
+    [50, null, 'send Linda $50', false],
+    [50, '', 'send Linda $50', false],
+  ])('%s with quote %j in %j → %s', (amount, quote, said, expected) => {
+    expect(isAmountGrounded(amount, quote, said)).toBe(expected)
   })
 })

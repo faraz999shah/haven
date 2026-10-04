@@ -30,7 +30,10 @@ export function combine({ rules, ai, followUpsAsked }: CombineInput): Decision {
       action: 'hold',
       riskLevel: 'high',
       source: 'rules',
-      reason: assessment?.reason || ruleText || 'Held by protection rules.',
+      // Lead with the rules that fired; add the AI's view only when it also saw a concern.
+      reason: [ruleText, assessment && assessment.risk_level !== 'low' ? assessment.reason : '']
+        .filter(Boolean)
+        .join(' '),
     }
   }
 

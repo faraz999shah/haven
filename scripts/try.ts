@@ -19,7 +19,7 @@ async function main() {
   let next: string | undefined = process.argv.slice(2).join(' ') || undefined
 
   for (;;) {
-    const text = next ?? (await rl.question('\nMargaret: '))
+    const text = next ?? (await rl.question('\nMargaret: ').catch(() => ''))
     next = undefined
     if (!text.trim()) break
     if (process.argv.length > 2 && transcript.length === 0) console.log(`\nMargaret: ${text}`)

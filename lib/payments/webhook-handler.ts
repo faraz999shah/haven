@@ -37,7 +37,10 @@ export async function handlePayPalWebhook(
     console.error('Webhook verification error:', err)
     return { status: 503, body: { error: 'Verification unavailable' } }
   }
-  if (!verified) return { status: 401, body: { error: 'Invalid signature' } }
+  if (!verified) {
+    console.warn(`PayPal webhook ${event.event_type} (${event.id}): invalid signature, rejected`)
+    return { status: 401, body: { error: 'Invalid signature' } }
+  }
 
   const [seen] = await db.select({ id: webhookEvents.id }).from(webhookEvents).where(eq(webhookEvents.id, event.id))
   if (seen) return { status: 200, body: { ok: true, duplicate: true } }
@@ -53,5 +56,6 @@ export async function handlePayPalWebhook(
     .insert(webhookEvents)
     .values({ id: event.id, eventType: event.event_type, resourceId: payoutBatchIdFromEvent(event), payload: event })
     .onConflictDoNothing()
+  console.log(`PayPal webhook ${event.event_type} (${event.id}): verified, ${updated} payment(s) updated`)
   return { status: 200, body: { ok: true, updated } }
 }

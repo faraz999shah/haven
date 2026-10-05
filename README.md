@@ -184,7 +184,8 @@ npm test
 - **The known-scam list is hardcoded** (a few fictional entries in `lib/scam/hardcoded-source.ts`). `checkScamList()` sits behind a `ScamSource` interface so a real data source can be swapped in without changing callers.
 - **Sandbox only.** Payments use PayPal sandbox money. Payouts to an email with no PayPal account stay "unclaimed" (Haven keeps them as in-flight); PayPal returns them after 30 days.
 - **Webhook simulator events can't be verified.** PayPal's dashboard simulator events fail signature verification, so Haven rejects them; use real sandbox payouts.
-- **No authentication.** One hardcoded caregiver and senior, switched by the demo toggle.
+- **No authentication.** One hardcoded caregiver and senior, switched by the demo toggle. Anyone with the URL can use the caregiver pages: approve held payments, change rules and read transcripts. This is a sandbox-only demo; real use needs caregiver login.
+- **Rate limiting is basic.** `/api/converse` allows 20 turns per minute per IP and 300 per hour in total, kept in memory. Set a spending cap on the OpenAI key as well.
 - **Single server instance.** Turns within one conversation are serialized in memory, which assumes one process (true on Render's free plan). Payment sending is still protected by a database-level claim.
 - **Voice depends on the browser.** Speech recognition works in Chrome, Edge and Safari (Safari needs Dictation enabled), not Firefox; typing is always available. Browser speech recognition may send audio to the browser vendor's speech service.
 - **AI output can vary between runs.** The decision is safe regardless (it can only be made stricter by the AI), but wording and risk levels for borderline cases may differ.

@@ -41,7 +41,7 @@ describe.skipIf(!url)('assessPayment', async () => {
       kind: 'decided',
       decision: { action: 'confirm', riskLevel: 'low' },
       reply: 'Send $85 to Maria for groceries?',
-      payee: { name: 'Maria Adams', email: 'maria.adams@example.com' },
+      payee: { name: 'Maria Adams', email: process.env.SANDBOX_EMAIL_MARIA || 'maria.adams@example.com' },
     })
   })
 

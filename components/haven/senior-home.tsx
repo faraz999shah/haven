@@ -115,15 +115,16 @@ export function SeniorHome({ setRole, setPage }: { setRole: (role: Role) => void
   const lastHaven = turns.at(-1)?.role === 'haven' ? turns.at(-1) : null
   const earlier = turns.slice(0, lastHaven ? -2 : -1).slice(-4)
 
-  const prompt = busy
-    ? 'Let me check that...'
-    : mic.listening
-      ? "I'm listening..."
-      : stage === 'awaiting_confirmation'
-        ? 'Tap a button below, or tap the microphone and say yes or no'
-        : turns.length && stage === 'collecting'
-          ? 'Tap the microphone to answer'
-          : 'Tap and tell me who to pay'
+  const prompt =
+    busy || mic.transcribing
+      ? 'Let me check that...'
+      : mic.listening
+        ? "I'm listening..."
+        : stage === 'awaiting_confirmation'
+          ? 'Tap a button below, or tap the microphone and say yes or no'
+          : turns.length && stage === 'collecting'
+            ? 'Tap the microphone to answer'
+            : 'Tap and tell me who to pay'
 
   return (
     <div className="relative flex min-h-[calc(100vh-150px)] flex-col items-center justify-center pb-28">
@@ -133,14 +134,14 @@ export function SeniorHome({ setRole, setPage }: { setRole: (role: Role) => void
           <CardContent className="flex flex-col items-center p-6 sm:p-10">
             <button
               onClick={() => (mic.listening ? mic.stop() : mic.start())}
-              disabled={busy || !mic.supported}
+              disabled={busy || mic.transcribing || !mic.supported}
               aria-label={mic.listening ? 'Stop listening' : 'Tap and tell Haven who to pay'}
               className={cn(
                 'relative flex size-44 items-center justify-center rounded-full bg-[#1f6b4f] text-white shadow-[0_12px_30px_rgba(31,107,79,0.25)] transition-transform hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100',
                 mic.listening && 'animate-pulse ring-8 ring-[#cce7d3]',
               )}
             >
-              {busy ? (
+              {busy || mic.transcribing ? (
                 <Spinner className="size-14" />
               ) : mic.listening ? (
                 <Square className="size-14" />

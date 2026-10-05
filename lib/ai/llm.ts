@@ -17,6 +17,7 @@ export type StructuredCall = (req: StructuredRequest) => Promise<unknown>
 export const models = {
   parse: () => process.env.OPENAI_PARSE_MODEL || 'gpt-6-luna',
   risk: () => process.env.OPENAI_RISK_MODEL || 'gpt-6.1-sol',
+  transcribe: () => process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe',
 }
 
 let client: OpenAI | null = null
@@ -47,4 +48,15 @@ export const openaiStructuredCall: StructuredCall = async ({ model, system, inpu
     }
   }
   return JSON.parse(response.output_text)
+}
+
+// Speech to text for browsers whose built-in recognition is missing or can't reach its service.
+export async function transcribeAudio(audio: File): Promise<string> {
+  const result = await getClient().audio.transcriptions.create({
+    model: models.transcribe(),
+    file: audio,
+    language: 'en',
+    response_format: 'json',
+  })
+  return result.text.trim()
 }

@@ -11,9 +11,7 @@ export interface PayeeCandidate {
 }
 
 export type PayeeResolution<T extends PayeeCandidate> =
-  | { kind: 'match'; payee: T }
-  | { kind: 'ambiguous'; candidates: T[] }
-  | { kind: 'none' }
+  { kind: 'match'; payee: T } | { kind: 'ambiguous'; candidates: T[] } | { kind: 'none' }
 
 const FILLER = /^(my|our|the|to)\s+/
 

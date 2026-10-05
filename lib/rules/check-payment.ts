@@ -24,7 +24,11 @@ export interface CheckPaymentResult extends RulesResult {
 // Prior payments older than this can't affect "today" in any time zone or a rapid window under 2 days.
 const LOOKBACK_MS = 48 * 60 * 60 * 1000
 
-export async function checkPaymentRules(db: Db, proposed: ProposedPayment, now = new Date()): Promise<CheckPaymentResult> {
+export async function checkPaymentRules(
+  db: Db,
+  proposed: ProposedPayment,
+  now = new Date(),
+): Promise<CheckPaymentResult> {
   const [senior] = await db.select().from(seniors).where(eq(seniors.id, proposed.seniorId))
   if (!senior) throw new Error(`Unknown senior ${proposed.seniorId}`)
   const [settings] = await db.select().from(ruleSettings).where(eq(ruleSettings.seniorId, senior.id))

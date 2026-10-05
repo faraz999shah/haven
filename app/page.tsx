@@ -17,11 +17,11 @@ export default function Haven() {
   const content =
     role === 'senior' ? (
       page === 'history' ? (
-        <SeniorList />
+        <SeniorList onBack={() => setPage('home')} />
       ) : page === 'contacts' ? (
-        <SeniorList contactsView />
+        <SeniorList contactsView onBack={() => setPage('home')} />
       ) : (
-        <SeniorHome setRole={setRole} />
+        <SeniorHome setRole={setRole} setPage={setPage} />
       )
     ) : page === 'rules' ? (
       <RulesPage />

@@ -100,8 +100,14 @@ export async function seedDemo(db: Db, now = new Date()): Promise<void> {
           'Margaret was told she won a prize and must pay a fee to claim it. Paying to receive a prize is a common scam, and this payee is on the known-scam list.',
         signals: ['prize_or_lottery', 'urgency', 'unknown_payee'],
         rules: [
-          { code: 'SCAM_LIST', message: 'Prize Claim Center matches a known scam name (Lottery or sweepstakes fee scam).' },
-          { code: 'NEW_PAYEE', message: "Prize Claim Center isn't on Margaret's trusted list, and you asked to review all new payees." },
+          {
+            code: 'SCAM_LIST',
+            message: 'Prize Claim Center matches a known scam name (Lottery or sweepstakes fee scam).',
+          },
+          {
+            code: 'NEW_PAYEE',
+            message: "Prize Claim Center isn't on Margaret's trusted list, and you asked to review all new payees.",
+          },
           { code: 'MAX_SINGLE', message: '$500 is over the $200 single-payment limit.' },
         ],
         transcript: [

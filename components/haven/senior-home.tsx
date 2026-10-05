@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { speak, useSpeechRecognition } from '@/hooks/use-speech'
 import { cn } from '@/lib/utils'
 import { seniorStatus, type PaymentSummary } from './payment-status'
+import { SeniorNotices } from './senior-notices'
 import type { Role } from './types'
 
 type Stage = 'collecting' | 'awaiting_confirmation' | 'done'
@@ -126,6 +127,7 @@ export function SeniorHome({ setRole, setPage }: { setRole: (role: Role) => void
 
   return (
     <div className="relative flex min-h-[calc(100vh-150px)] flex-col items-center justify-center pb-28">
+      <SeniorNotices />
       <div className="w-full max-w-2xl">
         <Card className="border-[#dfe9df] bg-[#f7fbf6] shadow-none">
           <CardContent className="flex flex-col items-center p-6 sm:p-10">

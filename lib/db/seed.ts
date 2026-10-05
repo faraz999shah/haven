@@ -180,6 +180,7 @@ export async function seedDemo(db: Db, now = new Date()): Promise<void> {
         rulesTriggered: p.rules ?? [],
         paypalStatus: p.status === 'sent' ? 'SUCCESS' : null,
         decidedAt: p.status === 'declined' ? decidedAt : null,
+        seniorNotifiedAt: p.status === 'declined' ? decidedAt : null,
         sentAt: p.status === 'sent' ? new Date(at.getTime() + 60_000) : null,
         createdAt: at,
         updatedAt: p.status === 'declined' ? decidedAt : at,

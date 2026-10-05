@@ -1,0 +1,1 @@
+ALTER TABLE "payments" ADD COLUMN "senior_notified_at" timestamp with time zone;

@@ -112,6 +112,8 @@ export const payments = pgTable(
     paypalStatus: text('paypal_status'),
     paypalError: text('paypal_error'),
     decidedAt: timestamp('decided_at', { withTimezone: true }),
+    // When the senior was told about the caregiver's decision (approve/decline).
+    seniorNotifiedAt: timestamp('senior_notified_at', { withTimezone: true }),
     sentAt: timestamp('sent_at', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ActivityPage } from '@/components/haven/activity-page'
-import { CaregiverDashboard } from '@/components/haven/caregiver-dashboard'
+import { CaregiverProvider } from '@/components/haven/caregiver-context'
+import { AllPaymentsPage, CaregiverDashboard } from '@/components/haven/caregiver-dashboard'
+import { CaregiverDialogs } from '@/components/haven/caregiver-dialogs'
 import { RulesPage } from '@/components/haven/rules-page'
 import { SeniorHome } from '@/components/haven/senior-home'
 import { SeniorList } from '@/components/haven/senior-list'
@@ -23,12 +25,19 @@ export default function Haven() {
       ) : (
         <SeniorHome setRole={setRole} setPage={setPage} />
       )
-    ) : page === 'rules' ? (
-      <RulesPage />
-    ) : page === 'activity' ? (
-      <ActivityPage />
     ) : (
-      <CaregiverDashboard setPage={setPage} />
+      <CaregiverProvider>
+        {page === 'rules' ? (
+          <RulesPage />
+        ) : page === 'activity' ? (
+          <ActivityPage />
+        ) : page === 'payments' ? (
+          <AllPaymentsPage />
+        ) : (
+          <CaregiverDashboard setPage={setPage} />
+        )}
+        <CaregiverDialogs />
+      </CaregiverProvider>
     )
   return (
     <div className="flex min-h-screen bg-[#f4f7f2] text-[#26352c]">

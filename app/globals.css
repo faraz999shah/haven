@@ -132,3 +132,11 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* AG Grid: tint held, high-risk payments so they stand out */
+.ag-row.haven-row-held-high {
+  background-color: #fff5f3;
+}
+.ag-row.haven-row-held-high:hover {
+  background-color: #ffece8;
+}

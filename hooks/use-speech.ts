@@ -26,6 +26,17 @@ interface Recognition {
 }
 type RecognitionCtor = new () => Recognition
 
+const SPEECH_ERRORS: Record<string, string> = {
+  'not-allowed':
+    'Haven needs permission to use the microphone. Click the microphone icon in the address bar to allow it, or type instead.',
+  'service-not-allowed':
+    "Voice isn't allowed in this browser. On a Mac, Safari also needs Dictation turned on. You can type instead.",
+  'audio-capture':
+    "I can't find a microphone. Check that one is connected and that your browser is allowed to use it in your computer's privacy settings.",
+  'no-speech': "I didn't hear anything. Tap the microphone and try again.",
+  network: "Voice needs an internet connection to the browser's speech service. Please try again or type instead.",
+}
+
 function getRecognitionCtor(): RecognitionCtor | null {
   if (typeof window === 'undefined') return null
   const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor }
@@ -65,12 +76,12 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
       }
       setInterim((finalText.current + pending).trim())
     }
+    let errored = false
     rec.onerror = (e) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        setError('Haven needs permission to use the microphone. You can type instead.')
-      } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
-        setError("I couldn't hear that. Please try again or type instead.")
-      }
+      console.warn('[Haven speech] recognition error:', e.error)
+      if (e.error === 'aborted') return
+      errored = true
+      setError(SPEECH_ERRORS[e.error] ?? "Voice didn't work just now. Please try again or type instead.")
     }
     rec.onend = () => {
       setListening(false)
@@ -78,6 +89,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
       const text = finalText.current.trim()
       setInterim('')
       if (text) onFinalRef.current(text)
+      else if (!errored) setError("I didn't hear anything. Tap the microphone and try again.")
     }
     recognition.current = rec
     setListening(true)

@@ -7,7 +7,7 @@ Return:
 - `payee_name`: who should receive the money. If the senior gives a name, return just the name ("Kevin" from "my grandson Kevin", "Joe's Plumbing"). If they only describe the person, return the description ("my granddaughter", "the plumber"). Do not invent a surname or guess who they mean. null if not said.
 - `amount`: the amount in US dollars as a number (85, 12.5). Convert spoken amounts ("eighty-five dollars", "a hundred and twenty bucks"). If the senior has not said an amount, it must be null: never guess, never use 0.
 - `amount_quote`: the exact words the senior used for the amount, copied from the conversation ("$85", "eighty-five dollars"). null when `amount` is null.
-- `purpose`: what the money is for in a few words ("groceries", "bail", "fixing the sink"). null if not said.
+- `purpose`: what the money is for, in a few of the senior's own words ("groceries", "bail"). Only if the senior said it; never guess or infer one. null if not said.
 - `clarifying_question`: if `payee_name` or `amount` is missing or unclear, one short, warm question asking only for what is missing. Otherwise null. Never ask about the purpose; it is optional.
 
 Merge new information with the details already collected. If the senior corrects something ("no, make it $60"), use the correction.

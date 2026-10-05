@@ -75,8 +75,9 @@ export function SeniorHome({ setRole, setPage }: { setRole: (role: Role) => void
 
   const mic = useSpeechRecognition(startOver)
 
+  // Only open the typing box for errors that won't go away by trying again.
   useEffect(() => {
-    if (mic.error) setTyping(true)
+    if (mic.error && !/didn't hear anything/.test(mic.error)) setTyping(true)
   }, [mic.error])
 
   // While a sent payment is on its way, refresh its status until PayPal settles it.

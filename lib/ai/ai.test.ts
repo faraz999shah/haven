@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StructuredCall, StructuredRequest } from './llm'
-import { isAmountGrounded, parseRequest } from './parse'
+import { isAmountGrounded, isPurposeGrounded, parseRequest } from './parse'
 import { assessRisk, type RiskContext } from './risk'
 
 const returning =
@@ -201,5 +201,19 @@ describe('isAmountGrounded', () => {
     [50, '', 'send Linda $50', false],
   ])('%s with quote %j in %j → %s', (amount, quote, said, expected) => {
     expect(isAmountGrounded(amount, quote, said)).toBe(expected)
+  })
+})
+
+describe('isPurposeGrounded', () => {
+  it.each([
+    ['groceries', 'Send Maria $85 for groceries', true],
+    ['groceries', 'send Maria $85 for the grocery run', true],
+    ['bail', 'he needs $450 for bail', true],
+    ['fixing the sink', 'pay Joe for the sink', true],
+    ['fixing the sink', 'send the plumber $20000', false], // seen live
+    ['payment', 'I need to pay Linda', false],
+    [null, 'anything', false],
+  ])('%j in %j → %s', (purpose, said, expected) => {
+    expect(isPurposeGrounded(purpose, said)).toBe(expected)
   })
 })

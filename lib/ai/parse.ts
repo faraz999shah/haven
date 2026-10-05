@@ -58,7 +58,7 @@ export async function parseRequest(
     isAmountGrounded(out.amount, text(out.amount_quote), seniorWords)
       ? dollarsToCents(out.amount)
       : null
-  const purpose = text(out.purpose)
+  const purpose = isPurposeGrounded(text(out.purpose), seniorWords) ? text(out.purpose) : null
   const modelQuestion = text(out.clarifying_question)
   const draft: PaymentDraft = { payeeName, amountCents, purpose }
 
@@ -101,4 +101,38 @@ export function isAmountGrounded(amount: number, quote: string | null, seniorWor
   const digits = q.match(/\d[\d,]*(\.\d+)?/)
   if (digits) return Math.abs(Number(digits[0].replace(/,/g, '')) - amount) < 0.005
   return NUMBER_WORD.test(q)
+}
+
+const FILLER_WORDS = new Set([
+  'for',
+  'the',
+  'a',
+  'an',
+  'to',
+  'of',
+  'and',
+  'my',
+  'her',
+  'his',
+  'their',
+  'some',
+  'with',
+  'on',
+  'in',
+])
+
+// The model sometimes invents a purpose (seen live: "fixing the sink" for "send the plumber $20000").
+// Keep it only if one of its words, or a close form of one ("fix" / "fixing"), was actually said.
+export function isPurposeGrounded(purpose: string | null, seniorWords: string): boolean {
+  if (!purpose) return false
+  const said = normalize(seniorWords)
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+  const words = normalize(purpose)
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(' ')
+    .filter((w) => w && !FILLER_WORDS.has(w))
+  const stem = (w: string) => w.slice(0, Math.max(3, Math.min(w.length, 4)))
+  return words.some((w) => said.some((s) => s === w || (s.length >= 3 && w.length >= 3 && stem(s) === stem(w))))
 }

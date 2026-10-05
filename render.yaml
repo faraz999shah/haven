@@ -1,0 +1,57 @@
+# Render Blueprint: one Node web service + one Postgres database.
+# Deploy: Render Dashboard → New → Blueprint → pick this repo. Secrets marked `sync: false`
+# are prompted for on first deploy (or set them later under the service's Environment tab).
+#
+# Free plans work for the demo, with caveats (see README → Deploying on Render):
+#   - the web service sleeps after 15 min idle (~1 min cold start)
+#   - a free Postgres database expires 30 days after creation
+
+services:
+  - type: web
+    name: haven
+    runtime: node
+    plan: free
+    region: oregon
+    # Dev dependencies (TypeScript, Tailwind) are needed for the build.
+    buildCommand: npm ci --include=dev && npm run build
+    # No pre-deploy step on the free plan: migrate (and seed an empty database) on start.
+    startCommand: npm run db:setup && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: haven-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_PARSE_MODEL
+        value: gpt-6-luna
+      - key: OPENAI_RISK_MODEL
+        value: gpt-6.1-sol
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_API_BASE
+        value: https://api-m.sandbox.paypal.com
+      # Set after the first deploy: npm run paypal:webhook -- https://<your-service>.onrender.com
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: SANDBOX_EMAIL_MARIA
+        sync: false
+      - key: SANDBOX_EMAIL_JOE
+        sync: false
+      - key: SANDBOX_EMAIL_LINDA
+        sync: false
+      - key: DEMO_TIME_ZONE
+        value: America/New_York
+      # Bearer token for POST /api/admin/reset-demo (Render generates a random value).
+      - key: DEMO_RESET_TOKEN
+        generateValue: true
+
+databases:
+  - name: haven-db
+    plan: free
+    databaseName: haven
+    user: haven
+    postgresMajorVersion: "17"
